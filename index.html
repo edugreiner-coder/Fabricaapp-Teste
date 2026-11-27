@@ -118,7 +118,7 @@ input[type=checkbox]{width:auto}.ck{display:flex;gap:8px;align-items:center;marg
 </div>
 
 <div id="tabE" hidden>
-<div class="card"><h2>Equipe</h2><div id="eqlist"></div></div>
+<div class="card"><h2>Equipe</h2><div id="eqlist"></div></div><div class="card" id="staffPreviewCard"><h2>Testar tela de funcionário</h2><p class="s">Prévia somente para consulta. Não altera pedidos nem permissões.</p><label for="staffPreviewUser">Funcionário</label><select id="staffPreviewUser"><option value="">Selecione um funcionário</option></select><div id="staffPreviewContent" style="margin-top:12px"></div></div>
 <div class="card v"><h2>Adicionar pessoa</h2>
 <label for="eqn">Nome</label><input id="eqn"><label for="eqe" style="margin-top:8px">E-mail de login</label><input id="eqe" type="email" autocapitalize="off"><label for="eqs" style="margin-top:8px">Senha (mínimo 6 caracteres)</label><input id="eqs" type="text" autocapitalize="off">
 <label style="margin-top:8px">Abas liberadas</label><div id="eqa"></div>
@@ -595,7 +595,20 @@ return it.map(function(x){var on=x[0]=="dono"?d:(abs||[]).indexOf(x[0])>=0;retur
 function eqUI(){var h="";UL.forEach(function(u){var dn=String(u.Role).toLowerCase()=="dono",ab=Array.isArray(u.Abas)?u.Abas:(DEFT[String(u.Role).toLowerCase()]||[]),tx=dn?"Dono (acesso total)":(ab.map(function(t){return TN[t]}).filter(Boolean).join(", ")||"nenhuma aba"),me=ME&&u.id==ME.uid;
 h+='<div class="kv" style="align-items:center"><span><strong>'+esc(u.Nome)+"</strong><br>"+esc(tx)+(u.Email?"<br>"+esc(u.Email):"")+"</span><span>"+(me?"":'<button data-eqed="'+u.id+'">Editar</button> <button data-rm="'+u.id+'">Remover</button>')+"</span></div>";
 if(EQED==u.id)h+='<div id="eqedit" style="padding:8px 0">'+abHtml(u.Role,ab)+'<div class="row" style="margin-top:6px"><button class="p" data-eqsv="'+u.id+'">Salvar abas</button><button data-eqcx="1">Cancelar</button></div><h3>E-mail e senha</h3><label>E-mail de login</label><input id="eqe2" type="email" autocapitalize="off" value="'+esc(u.Email||"")+'"><label style="margin-top:8px">Nova senha (mínimo 6 caracteres)</label><input id="eqs2" type="text" autocapitalize="off"><p class="s">O Firebase não deixa trocar o login de outra pessoa direto. "Trocar" cria um novo login com este e-mail e senha e passa o nome e as abas para ele; o login antigo deixa de funcionar. "Enviar link" manda um e-mail para a pessoa escolher a senha (precisa ser um e-mail real).</p><div class="row"><button class="p" data-eqacc="'+u.id+'">Trocar e-mail e senha</button><button data-eqrst="1">Enviar link de nova senha</button></div><div class="warn" id="eqm2"></div></div>'});
-$("eqlist").innerHTML=h}
+$("eqlist").innerHTML=h;staffPreviewRender()}
+function staffPreviewRender(){
+var sel=$("staffPreviewUser"),out=$("staffPreviewContent");if(!sel||!out||ROLE!=="dono")return;
+var chosen=sel.value,users=UL.filter(function(u){return String(u.Role||"").toLowerCase()!=="dono"});
+sel.innerHTML='<option value="">Selecione um funcionário</option>'+users.map(function(u){return '<option value="'+esc(u.id)+'">'+esc(u.Nome||u.Email||"Funcionário")+'</option>'}).join("");
+sel.value=users.some(function(u){return u.id===chosen})?chosen:"";
+var u=users.filter(function(x){return x.id===sel.value})[0];if(!u){out.innerHTML='<p class="s">Escolha uma pessoa para conferir suas abas e os pedidos disponíveis.</p>';return}
+var ab=Array.isArray(u.Abas)?u.Abas:(DEFT[String(u.Role||"").toLowerCase()]||[]);
+var allowed=OPS.filter(function(k){return ab.indexOf(k)>=0});
+var names=allowed.map(function(k){return TN[k]||k});
+var projects=(S.pedidos||[]).filter(function(p){return p.id!=="p1"||S.pedidos.length===1});
+out.innerHTML='<div style="border:1px solid var(--bd);border-radius:14px;padding:12px;max-width:390px;margin:auto"><h3 style="margin-top:0">Fábrica Luxor · '+esc(u.Nome||"Funcionário")+'</h3><p class="s">Abas liberadas</p><div class="row">'+(names.map(function(n){return '<span style="padding:6px 9px;border:1px solid var(--bd);border-radius:9px">'+esc(n)+'</span>'}).join("")||'<span>Nenhuma aba liberada</span>')+'</div><h3>Projetos cadastrados</h3><div class="lst">'+(projects.slice(0,30).map(function(p){return '<div class="li" style="border:1px solid var(--bd);border-radius:9px"><b>'+esc(p.nome||"Sem nome")+'</b><span>'+esc(p.sit||"")+'</span></div>'}).join("")||'<p class="s">Nenhum projeto carregado.</p>')+'</div></div><p class="s">Esta é uma prévia de navegação e dados, não uma sessão autenticada do funcionário. Para validar desenhos e eventuais erros específicos do perfil, ainda será necessário um teste com a conta dele.</p>';
+}
+$("staffPreviewUser").addEventListener("change",staffPreviewRender);
 var FOTOS={},FREQ={};
 function compress(file,M,q,cb){var im=new Image(),u=URL.createObjectURL(file);im.onload=function(){var k=Math.min(1,M/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);cb(c.toDataURL("image/jpeg",q))};im.onerror=function(){cb(null)};im.src=u}
 function upFoto(file){var p=mpd();if(!p||p.ph)return;var m=$("fmsg2");if(m)m.textContent="Enviando…";
